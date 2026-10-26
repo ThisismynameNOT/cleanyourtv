@@ -35,6 +35,22 @@ jobs:
         with:
           distribution: temurin
           java-version: "17.0.21"
+      - name: Distrust compromised Java CA roots (CVE-2026-114820)
+        shell: bash
+        run: |
+          set -euo pipefail
+          aliases=(emsigneccrootcag3 emsignrootcag1 emsignrootcag2 comodoaaaca)
+          for alias in "${aliases[@]}"; do
+            if keytool -list -cacerts -storepass changeit -alias "$alias" >/dev/null 2>&1; then
+              keytool -delete -cacerts -storepass changeit -alias "$alias"
+            fi
+          done
+          for alias in "${aliases[@]}"; do
+            if keytool -list -cacerts -storepass changeit -alias "$alias" >/dev/null 2>&1; then
+              echo "Compromised CA remains trusted: $alias" >&2
+              exit 1
+            fi
+          done
       - uses: android-actions/setup-android@v3
         with:
           packages: platforms;android-34 build-tools;34.0.0
